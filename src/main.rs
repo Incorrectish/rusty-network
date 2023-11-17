@@ -181,7 +181,7 @@ fn main() {
             .zip(y_test.into_iter().map(vectorized_result))
             .collect::<Vec<_>>();
 
-        // let first_tenth_data: Vec<_> = testing_data[..testing_data.len() / 10].to_vec();
+        let first_tenth_data: Vec<_> = testing_data[..testing_data.len() / 10].to_vec();
 
         let (x_train, y_train) = mnist_dataloader
             .load_training_data()
@@ -193,14 +193,14 @@ fn main() {
             .collect::<Vec<_>>();
 
         // we can create a network
-        let mut network = Network::new(vec![784, 100, 40, 16, 10]).expect("Passed in array length");
+        let mut network = Network::new(vec![784, 16, 16, 10]).expect("Passed in array length");
         network.stochastic_gradient_descent(
             &mut training_data,
             10,
-            1000,
+            30,
             3.0,
-            // Some(first_tenth_data),
-            Some(testing_data),
+            Some(first_tenth_data),
+            // Some(testing_data),
         );
     }
     // Show some random testing images

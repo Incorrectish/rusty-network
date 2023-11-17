@@ -16,6 +16,7 @@ use std::fmt;
 use std::fmt::format;
 
 use chrono::prelude::*;
+use rayon::prelude::*;
 use serde_json::{from_reader, to_writer};
 use std::fs::File;
 use std::io::{self, Write};
@@ -99,7 +100,7 @@ impl Network {
             });
         }
         let biases: Vec<Array2<f64>> = layer_sizes[1..]
-            .iter()
+            .par_iter()
             .map(|&y| {
                 let normal =
                     Normal::new(0.0, 1.0).expect("Invalid parameters for the normal distribution");
@@ -108,8 +109,8 @@ impl Network {
             })
             .collect();
         let weights: Vec<Array2<f64>> = layer_sizes
-            .iter()
-            .zip(layer_sizes.iter().skip(1))
+            .par_iter()
+            .zip(layer_sizes.par_iter().skip(1))
             .map(|(&x, &y)| Array2::random((y, x), Normal::new(0.0, 1.0).unwrap()))
             .collect();
         Ok(Network {
@@ -210,7 +211,7 @@ impl Network {
     fn update_mini_batch(&mut self, mini_batch: &[(Array2<f64>, Array2<f64>)], eta: f64) {
         let mut nabla_biases: Vec<Array2<f64>> = self
             .biases
-            .iter()
+            .par_iter()
             .map(|bias| {
                 let [dim1, dim2] = bias.shape() else {
                     panic!("bias must be a two dimensional array")
@@ -221,7 +222,7 @@ impl Network {
 
         let mut nabla_weights: Vec<Array2<f64>> = self
             .biases
-            .iter()
+            .par_iter()
             .map(|bias| {
                 let [dim1, dim2] = bias.shape() else {
                     panic!("bias must be a two dimensional array")
@@ -233,27 +234,27 @@ impl Network {
         for (test, result) in mini_batch {
             let (delta_nabla_biases, delta_nabla_weights) = self.backprop(test, result);
             nabla_biases = nabla_biases
-                .into_iter()
-                .zip(delta_nabla_biases.into_iter())
+                .into_par_iter()
+                .zip(delta_nabla_biases.into_par_iter())
                 .map(|(nb, dnb)| nb + dnb)
                 .collect();
             nabla_weights = nabla_weights
-                .into_iter()
-                .zip(delta_nabla_weights.into_iter())
+                .into_par_iter()
+                .zip(delta_nabla_weights.into_par_iter())
                 .map(|(nw, dnw)| nw + dnw)
                 .collect();
         }
 
         self.weights
-            .iter_mut()
-            .zip(nabla_weights.into_iter())
+            .par_iter_mut()
+            .zip(nabla_weights.into_par_iter())
             .for_each(|(weight, nabla_weight)| {
                 *weight -= &((eta / (mini_batch.len() as f64)) * nabla_weight);
             });
 
         self.biases
-            .iter_mut()
-            .zip(nabla_biases.into_iter())
+            .par_iter_mut()
+            .zip(nabla_biases.into_par_iter())
             .for_each(|(bias, nabla_bias)| {
                 *bias -= &((eta / (mini_batch.len() as f64)) * nabla_bias);
             });
@@ -266,7 +267,7 @@ impl Network {
     ) -> (Vec<Array2<f64>>, Vec<Array2<f64>>) {
         let mut nabla_biases: Vec<Array2<f64>> = self
             .biases
-            .iter()
+            .par_iter()
             .map(|bias| {
                 let [dim1, dim2] = bias.shape() else {
                     panic!("bias must be a two dimensional array")
@@ -277,7 +278,7 @@ impl Network {
 
         let mut nabla_weights: Vec<Array2<f64>> = self
             .biases
-            .iter()
+            .par_iter()
             .map(|bias| {
                 let [dim1, dim2] = bias.shape() else {
                     panic!("bias must be a two dimensional array")
@@ -360,6 +361,7 @@ fn cache_network(accuracy: f64, network: &Network) -> std::io::Result<()> {
 // Simply a helper module to ensure that my data has been sufficiently shaped before I pass it into my neural network, prevents errors and so forth
 pub(crate) mod reshape {
     use ndarray::Array2;
+    use rayon::prelude::*;
 
     pub enum Reshaped {
         Reshaped(Vec<(Array2<f64>, Array2<f64>)>),
@@ -392,7 +394,7 @@ pub(crate) mod reshape {
     pub fn reshape_testing_data(testing_data: Vec<(Array2<f64>, Array2<f64>)>) -> Reshaped {
         Reshaped::Reshaped(
             testing_data
-                .into_iter()
+                .into_par_iter()
                 .map(|(test, result)| {
                     let [num_rows, num_columns] = *test.shape() else {
                         panic!("Shape is two dimensional")
