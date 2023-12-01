@@ -1,0 +1,2 @@
+#+title: Readme
+This project implements an artificial multilayer feedforward neural network in rust
