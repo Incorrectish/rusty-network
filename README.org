@@ -1,2 +1,22 @@
 #+title: Readme
-This project implements an artificial multilayer feedforward neural network in rust
+Implementation of a Multilayer Artificial Feedforward Neural Network in Rust
+
+The important functions to know are the following
+
+```rs
+ pub fn new(layer_sizes: Vec<usize>) -> Result<Self, NetworkError>
+```
+This function sets up the network, using a normal distribution to initialize the weights and biases. As an argument it takes in a vector of layer sizes, which must have a length greater than or equal to two, as networks need an input and output layer. It returns an error if the size is less than 2.
+
+```rs
+pub fn stochastic_gradient_descent(
+        &mut self,
+        training_data: &mut Vec<(Array2<f64>, Array2<f64>)>,
+        mini_batch_size: usize,
+        epochs: usize,
+        eta: f64,
+        testing_data: Option<Vec<(Array2<f64>, Array2<f64>)>>,
+    )
+```
+This function performs stochastic gradient descent on the network adjusting the weights and biases, training the network. As of right now, the network works on images from the MNIST database, though it will soon be expanded to work on generic data. Training data is an arrray of input images to the correctly classified output data. The mini_batch_size parameter is the size of the training batch for stochastic descent. Epochs is the number of training descent iterations the model will go through. eta is the learning rate, how much the model's weights and biases will change based on each iteration of training. Testing data is optional and if provided, prints the accuracy of the model after each training epoch. 
+
